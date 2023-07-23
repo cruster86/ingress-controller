@@ -135,60 +135,6 @@ If one of them is missing the internal load balancer will not be deployed. Examp
 
 `controller.service.internal.annotations` varies with the cloud service you're using.
 
-Example for AWS:
-
-```yaml
-controller:
-  service:
-    internal:
-      enabled: true
-      annotations:
-        # Create internal ELB
-        service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-        # Any other annotation can be declared here.
-```
-
-Example for GCE:
-
-```yaml
-controller:
-  service:
-    internal:
-      enabled: true
-      annotations:
-        # Create internal LB. More information: https://cloud.google.com/kubernetes-engine/docs/how-to/internal-load-balancing
-        # For GKE versions 1.17 and later
-        networking.gke.io/load-balancer-type: "Internal"
-        # For earlier versions
-        # cloud.google.com/load-balancer-type: "Internal"
-
-        # Any other annotation can be declared here.
-```
-
-Example for Azure:
-
-```yaml
-controller:
-  service:
-      annotations:
-        # Create internal LB
-        service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-        # Any other annotation can be declared here.
-```
-
-Example for Oracle Cloud Infrastructure:
-
-```yaml
-controller:
-  service:
-      annotations:
-        # Create internal LB
-        service.beta.kubernetes.io/oci-load-balancer-internal: "true"
-        # Any other annotation can be declared here.
-```
-
-An use case for this scenario is having a split-view DNS setup where the public zone CNAME records point to the external balancer URL while the private zone CNAME records point to the internal balancer URL. This way, you only need one ingress kubernetes object.
-
 Optionally you can set `controller.service.loadBalancerIP` if you need a static IP for the resulting `LoadBalancer`.
 
 ### Ingress Admission Webhooks
