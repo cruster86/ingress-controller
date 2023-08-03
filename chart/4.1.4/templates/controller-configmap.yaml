@@ -1,0 +1,179 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "ingress-nginx.labels" . | nindent 4 }}
+    app.kubernetes.io/component: controller
+    {{- with .Values.controller.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- if .Values.controller.configAnnotations }}
+  annotations: {{ toYaml .Values.controller.configAnnotations | nindent 4 }}
+{{- end }}
+  name: {{ include "ingress-nginx.controller.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+data:
+{{- if .Values.ip_filtration.enable }}
+  http-snippet: |
+    geoip2 /etc/GeoIP2/GeoLite2-Country.mmdb {
+        $geoip2_data_country_iso_code country iso_code;
+        $geoip2_data_continent_code continent code;
+    }
+    geoip2 /etc/GeoIP2/GeoLite2-ASN.mmdb {
+        $geoip2_data_autonomous_system_number autonomous_system_number;
+        $geoip2_data_autonomous_system_organization autonomous_system_organization;
+    }
+    map $geoip2_data_country_iso_code $allowed_country {
+        default no;
+        AZ yes;
+        AM yes;
+        BY yes;
+        KZ yes;
+        KG yes;
+        MD yes;
+        RU yes;
+        TJ yes;
+        UZ yes;
+    }
+    map $geoip2_data_autonomous_system_number $allowed_asn {
+        default no;
+        6789 yes;
+        210078 yes;
+        204144 yes;
+        204791 yes;
+        57679 yes;
+        43936 yes;
+        47939 yes;
+        57847 yes;
+        12403 yes;
+        57893 yes;
+        208397 yes;
+        48330 yes;
+        44387 yes;
+        39248 yes;
+        57641 yes;
+        203561 yes;
+        25591 yes;
+        51522 yes;
+        197335 yes;
+        204161 yes;
+        197152 yes;
+        197175 yes;
+        48722 yes;
+        197159 yes;
+        203451 yes;
+        52052 yes;
+        205236 yes;
+        48084 yes;
+        44533 yes;
+        47203 yes;
+        196705 yes;
+        57093 yes;
+        48004 yes;
+        197628 yes;
+        47349 yes;
+        34180 yes;
+        51214 yes;
+        33978 yes;
+        35533 yes;
+        209789 yes;
+        8654 yes;
+        39047 yes;
+        207909 yes;
+        203454 yes;
+        5593 yes;
+        47801 yes;
+        57903 yes;
+        59823 yes;
+        211867 yes;
+        200702 yes;
+        208701 yes;
+        209038 yes;
+        62287 yes;
+        51211 yes;
+        210451 yes;
+        28917 yes;
+        211245 yes;
+        443387 yes;
+        208090 yes;
+        496117 yes;
+        51518 yes;
+        213258 yes;
+        51917 yes;
+        56352 yes;
+        198338 yes;
+        198899 yes;
+        44139 yes;
+        201069 yes;
+        6167 yes;
+        212205 yes;
+        213278 yes;
+        28761 yes;
+        35381 yes;
+        206448 yes;
+        200420 yes;
+        207875 yes;
+        204259 yes;
+        44341 yes;
+        52218 yes;
+        57982 yes;
+        44546 yes;
+        210442 yes;
+        59744 yes;
+        42239 yes;
+        49617 yes;
+        205515 yes;
+        213191 yes;
+        209927 yes;
+        39529 yes;
+        56587 yes;
+        211791 yes;
+        41161 yes;
+        50042 yes;
+        200922 yes;
+        57874 yes;
+        50140 yes;
+        43822 yes;
+        41269 yes;
+        43222 yes;
+        43564 yes;
+        35816 yes;
+        59833 yes;
+        201776 yes;
+        57383 yes;
+        198293 yes;
+        43634 yes;
+        34901 yes;
+    }
+    map "$geoip2_data_country_iso_code:$allowed_asn" $grant_access {
+        default no;
+        "~AZ:.*" yes;
+        "~AM:.*" yes;
+        "~BY:.*" yes;
+        "~KZ:.*" yes;
+        "~KG:.*" yes;
+        "~MD:.*" yes;
+        "~RU:.*" yes;
+        "~TJ:.*" yes;
+        "~UZ:.*" yes;
+        "~UA:yes" yes;
+    }
+    log_format custom '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_length $request_time [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr $upstream_response_length $upstream_response_time $upstream_status $req_id $geoip2_data_country_iso_code';
+  main-snippet: load_module /etc/nginx/modules/ngx_http_geoip2_module.so;
+  server-snippet: |
+    access_log /var/log/nginx/access.log custom if=$loggable;
+{{- end }}
+  use-forwarded-headers: "true"
+  allow-snippet-annotations: "{{ .Values.controller.allowSnippetAnnotations }}"
+{{- if .Values.controller.addHeaders }}
+  add-headers: {{ .Release.Namespace }}/{{ include "ingress-nginx.fullname" . }}-custom-add-headers
+{{- end }}
+{{- if or .Values.controller.proxySetHeaders .Values.controller.headers }}
+  proxy-set-headers: {{ .Release.Namespace }}/{{ include "ingress-nginx.fullname" . }}-custom-proxy-headers
+{{- end }}
+{{- if .Values.dhParam }}
+  ssl-dh-param: {{ printf "%s/%s" .Release.Namespace (include "ingress-nginx.controller.fullname" .) }}
+{{- end }}
+{{- range $key, $value := .Values.controller.config }}
+    {{- $key | nindent 2 }}: {{ $value | quote }}
+{{- end }}
