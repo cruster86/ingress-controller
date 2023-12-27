@@ -173,21 +173,18 @@ spec:
       {{- if .Values.controller.extraContainers }}
         {{ toYaml .Values.controller.extraContainers | nindent 8 }}
       {{- end }}
-    {{- if (or .Values.controller.extraInitContainers .Values.controller.extraModules) }}
+    {{- if .Values.ip_filtration.enable }}
       initContainers:
-      {{- if .Values.controller.extraInitContainers }}
-        {{ toYaml .Values.controller.extraInitContainers | nindent 8 }}
-      {{- end }}
-      {{- if .Values.controller.extraModules }}
-        {{- range .Values.controller.extraModules }}
-          - name: {{ .name }}
-            image: {{ .image }}
-            command: ['sh', '-c', '/usr/local/bin/init_module.sh']
-            volumeMounts:
-              - name: modules
-                mountPath: /modules_mount
-        {{- end }}
-      {{- end }}
+      - command: ["/bin/sh", "-c", "cp -a /opt/* /etc/GeoIP2"]
+        image: cr.yandex/crpcm9tg75s8gu2hqkp9/nginx/geoip2-db:latest
+        imagePullPolicy: Always
+        name: geoip2-db
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/GeoIP2
+          name: geoip2-db
     {{- end }}
     {{- if .Values.controller.hostNetwork }}
       hostNetwork: {{ .Values.controller.hostNetwork }}

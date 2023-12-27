@@ -7,6 +7,14 @@
 # nameOverride:
 # fullnameOverride:
 
+# Включение отдачи метрик для их приёма в кластере Сириус через endpoint с внешнего IP.
+controller_export_metrics:
+  enable: false
+  host: storage0.sirius.online
+
+ip_filtration:
+  enable: false
+
 ## Labels to apply to all resources
 ##
 commonLabels: {}
@@ -341,7 +349,9 @@ controller:
 
   # -- Annotations to be added to controller pods
   ##
-  podAnnotations: {}
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: 10254
 
   replicaCount: 1
 
@@ -461,7 +471,7 @@ controller:
     externalIPs: []
 
     # -- Used by cloud providers to connect the resulting `LoadBalancer` to a pre-existing static IP according to https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
-    loadBalancerIP: ""
+    loadBalancerIP: "51.250.22.203"
     loadBalancerSourceRanges: []
 
     enableHttp: true
@@ -469,7 +479,7 @@ controller:
 
     ## Set external traffic policy to: "Local" to preserve source IP on providers supporting it.
     ## Ref: https://kubernetes.io/docs/tutorials/services/source-ip/#source-ip-for-services-with-typeloadbalancer
-    # externalTrafficPolicy: ""
+    externalTrafficPolicy: Local
 
     ## Must be either "None" or "ClientIP" if set. Kubernetes will default to "None".
     ## Ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
@@ -762,7 +772,7 @@ controller:
 
 # -- Rollback limit
 ##
-revisionHistoryLimit: 10
+revisionHistoryLimit: 5
 
 ## Default 404 backend
 ##
